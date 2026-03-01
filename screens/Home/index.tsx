@@ -1,5 +1,7 @@
 import { LyricsLine } from '@/components';
-import React, { FC, useCallback, useState } from 'react';
+import { useAudioPlayer } from 'expo-audio';
+import { Image } from 'expo-image';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import { Button, LayoutChangeEvent, ListRenderItemInfo, View } from 'react-native';
 import Animated, { LinearTransition, useAnimatedRef, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,6 +37,19 @@ const Home: FC = () => {
   const itemHeights = useSharedValue({});
   const ScrollY = useSharedValue(0);
 
+  const source = require('../../assets/audio/positions.mp3')
+   const player = useAudioPlayer(source);
+
+  useEffect(()=>{
+    player.addListener('playbackStatusUpdate', e => {
+      console.log("current play time ", e.currentTime)
+    });
+    return ()=>{
+      player.removeAllListeners('playbackStatusUpdate');
+    }
+
+  })
+
   // update the lyrics line index
   const updateActiveIndex = useCallback((type: 'next' | 'prev') => {
     let currentIndex = activeIndex;
@@ -52,6 +67,14 @@ const Home: FC = () => {
       // console.log(event.contentOffset.y);
       ScrollY.value = event.contentOffset.y;
   });
+
+  const handlePlayPause = () => {
+    if(player.paused) {
+      player.play()
+    } else {
+      player.pause();
+    }
+  }
 
   // Handle Item Layout
     const handleItemLayout = useCallback((index:number, event:LayoutChangeEvent) => {
@@ -78,10 +101,11 @@ const Home: FC = () => {
           currentActiveIndex={activeIndex}
         />
     )
-  }, [activeIndex,setActiveIndex])
+  }, [activeIndex,setActiveIndex]);
+  
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#427A43' }} >
+    <View style={{ flex: 1,  }} >
       <View style={{ paddingTop: insets.top, flex: 1 }}>
         <Animated.FlatList
           ref={flatListRef}
@@ -109,8 +133,20 @@ const Home: FC = () => {
           <Button title="Move Previous" color={'white'} onPress={() => updateActiveIndex('prev')} />
           <Button title="Move Next" color={'white'} onPress={() => updateActiveIndex('next')} />
         </View>
+        <Button title='Toogle Play' onPress={handlePlayPause} />
       </View>
-
+      <Image
+        source={require('../../assets/images/bg_image.webp')}
+        style={{
+          position:'absolute',
+          top:0,
+          bottom:0,
+          left:0,
+          right:0,
+          zIndex:-1
+        }}
+        blurRadius={60}
+      />
     </View>
   )
 }
