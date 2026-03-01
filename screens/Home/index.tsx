@@ -1,7 +1,7 @@
 import { LyricsLine } from '@/components';
 import React, { FC, useCallback, useState } from 'react';
 import { Button, LayoutChangeEvent, ListRenderItemInfo, View } from 'react-native';
-import Animated, { Easing, LinearTransition, useAnimatedRef, useAnimatedScrollHandler, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { LinearTransition, useAnimatedRef, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const LYRICS = [
@@ -33,15 +33,9 @@ const Home: FC = () => {
   const flatListRef = useAnimatedRef<Animated.FlatList>();
   const itemPositions = useSharedValue({});
   const itemHeights = useSharedValue({});
+  const ScrollY = useSharedValue(0);
 
-
-
-  const renderItem = useCallback(({ item, index }: ListRenderItemInfo<typeof LYRICS[number]>) => {
-    return (
-        <LyricsLine text={item.text} isHighlighted={index === activeIndex} />
-    )
-  }, [activeIndex])
-
+  // update the lyrics line index
   const updateActiveIndex = useCallback((type: 'next' | 'prev') => {
     let currentIndex = activeIndex;
     setActiveIndex((prevIndex) => {
@@ -53,13 +47,13 @@ const Home: FC = () => {
     flatListRef.current?.scrollToIndex({ index: currentIndex, animated: true });
   }, []);
 
+  // Animated Scroll Handler
   const scrollHandler = useAnimatedScrollHandler((event) => {
-    progress.value = withTiming(1,{duration:50,easing:Easing.inOut(Easing.ease)},(finished)=>{
-    if (finished) progress.value = withTiming(0,{duration:50,easing:Easing.inOut(Easing.ease)});
-    });
-    // console.log("scrollY",event.contentOffset.y);  
+      // console.log(event.contentOffset.y);
+      ScrollY.value = event.contentOffset.y;
   });
 
+  // Handle Item Layout
     const handleItemLayout = useCallback((index:number, event:LayoutChangeEvent) => {
     const { height, y } = event.nativeEvent.layout;
     itemHeights.value = {
@@ -72,6 +66,20 @@ const Home: FC = () => {
     };
   }, []);
 
+  // List Render Item
+  const renderItem = useCallback(({ item, index }: ListRenderItemInfo<typeof LYRICS[number]>) => {
+    return (
+        <LyricsLine text={item.text} isHighlighted={index === activeIndex}
+          itemHeights={itemHeights}
+          itemPositions={itemPositions}
+          index={index}
+          scrollY={ScrollY}
+          onLayout={(event) => handleItemLayout(index, event)}
+          currentActiveIndex={activeIndex}
+        />
+    )
+  }, [activeIndex,setActiveIndex])
+
   return (
     <View style={{ flex: 1, backgroundColor: '#427A43' }} >
       <View style={{ paddingTop: insets.top, flex: 1 }}>
@@ -83,7 +91,19 @@ const Home: FC = () => {
           keyExtractor={(item) => item.text}
           renderItem={renderItem}
           layout={LinearTransition.springify()}
-          contentContainerStyle={{ gap: 10, paddingBottom: insets.bottom + 20, paddingHorizontal: 20 }}
+          contentContainerStyle={{ gap: 10, paddingBottom: insets.bottom + 20, paddingHorizontal: 20, paddingTop:90 }}
+          onScrollBeginDrag={() => {
+    console.log("User started dragging");
+  }}
+  onScrollEndDrag={() => {
+    console.log("User released finger");
+  }}
+  onMomentumScrollBegin={() => {
+    console.log("Momentum started");
+  }}
+  onMomentumScrollEnd={() => {
+    console.log("Scroll fully stopped");
+  }}
         />
         <View style={{ flexDirection: 'row', justifyContent: 'space-around', padding: 20, height: 100 }}>
           <Button title="Move Previous" color={'white'} onPress={() => updateActiveIndex('prev')} />
