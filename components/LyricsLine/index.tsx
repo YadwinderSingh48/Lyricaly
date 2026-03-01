@@ -27,12 +27,18 @@ const LyricsLine:FC<LyricsLineProps> = ({ text, isHighlighted, index, currentAct
             
             }) : 1
           }
-        ]
+        ],
+        opacity: isActive ? withSpring(1, {
+              damping:16,
+              stiffness:160,
+              mass:1
+            
+            }) : 0.6
       }
   },[isActive]);
   return (
     <Animated.View style={[styles.container,animatedStyle]} >
-      <Animated.Text style={[styles.text, { color: isHighlighted ? '#FFD700' : '#fff' }]}>{text}</Animated.Text>
+      <Animated.Text style={[styles.text, { color: isHighlighted ? '#fff' : '#ffffff69' }]}>{text}</Animated.Text>
     </Animated.View>
   )
 }
